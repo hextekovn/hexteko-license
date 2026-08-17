@@ -222,7 +222,7 @@ async function sellerRemove(u) {
 function createCard(mode) {
   const role = SESSION.role
   return `
-    <div class="card"><h2>✨ Tạo key ${mode === 'admin' ? '' : '(bán cho khách)'}</h2>
+    <div class="card highlight"><h2>✨ Tạo key ${mode === 'admin' ? '' : '(bán cho khách)'}</h2>
       <div class="row">
         <div class="fld"><label>Loại thời hạn</label>
           <select id="k-unit" class="inp">
@@ -279,7 +279,7 @@ function copyKey(code) {
 // ---- DANH SÁCH KEY (admin: xem tất cả / filter seller, seller: key của mình) ----
 function keyTableHtml(rows, mode) {
   if (!rows.length) return '<div class="empty">Không có key</div>'
-  return `<div style="overflow-x:auto"><table>
+  return `<div class="table-wrap"><table>
     <thead><tr><th>Key</th><th>Seller</th><th>Thời hạn</th><th>Hạn tới</th><th>Acc</th><th>TB</th><th>Đã dùng</th><th>TT</th><th>Ghi chú</th><th>Thao tác</th></tr></thead>
     <tbody>${rows.map((r) => {
       const accTxt = r.accLimit === 0 ? 'Vô hạn' : r.accLimit + ' acc'
