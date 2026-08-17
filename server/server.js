@@ -57,6 +57,13 @@ function isExpired(key) {
   return key.expiresAt && new Date(key.expiresAt).getTime() <= Date.now()
 }
 
+function fmtDT(d) {
+  if (!d || isNaN(new Date(d).getTime())) return '—'
+  const p = (n) => String(n).padStart(2, '0')
+  const x = new Date(d)
+  return `${p(x.getDate())}/${p(x.getMonth() + 1)}/${x.getFullYear()} ${p(x.getHours())}:${p(x.getMinutes())}`
+}
+
 function keyView(k) {
   const used = (k.hwids || []).length
   return {
@@ -135,11 +142,14 @@ async function route(req, res, q, pathname) {
     const u = (q.get('u') || '').trim()
     const p = q.get('p') || ''
     if (u === 'admin') {
-      if (sha256(p) !== sha256(load().meta.adminPass)) {
+      const current = load().meta ? load().meta.adminPass : ''
+      if (sha256(p) !== sha256(current)) {
+        console.log(`[LOGIN] admin thất bại (ip ${(req.socket.remoteAddress || '').replace(/^::ffff:/, '')})`)
         return json(res, 200, { ok: false, msg: 'Sai mật khẩu admin' })
       }
       const t = newSession('admin', 'admin')
       addLog('admin', 'admin', 'login', 'Đăng nhập admin')
+      console.log('[LOGIN] admin thành công')
       return json(res, 200, { ok: true, token: t, role: 'admin', username: 'admin' })
     }
     const seller = load().sellers.find((s) => s.username === u)
@@ -286,6 +296,45 @@ async function route(req, res, q, pathname) {
       return json(res, 200, { ok: true })
     }
 
+    // ---- SỬA KEY: đổi thời hạn / gia hạn / đổi giới hạn acc / thiết bị / ghi chú ----
+    // unit=duration tính theo ngày/tháng. Mặc định CỘNG DỒN từ hạn cũ (gia hạn thêm),
+    // dùng replace=1 để tính lại từ thời điểm hiện tại (như tạo mới).
+    if (pathname === '/api/admin/key/edit') {
+      const code = normalize(q.get('code'))
+      const db = load()
+      const key = db.keys.find((k) => k.code === code)
+      if (!key) return json(res, 200, { ok: false, msg: 'Key không tồn tại' })
+
+      const unit = (q.get('unit') || key.unit || 'day').toLowerCase()
+      const duration = parseInt(q.get('duration') !== null ? q.get('duration') : (key.duration || 1), 10)
+      const accs = q.get('accs') !== null ? q.get('accs') : String(key.accLimit)
+      const devices = q.get('devices') !== null ? q.get('devices') : String(key.deviceLimit)
+      const note = q.get('note') !== null ? q.get('note') : (key.note || '')
+      const replace = q.get('replace') === '1'
+
+      if (!['day', 'month'].includes(unit)) return json(res, 200, { ok: false, msg: 'Đơn vị phải là day hoặc month' })
+      if (![1, 3, 0].includes(Number(accs))) return json(res, 200, { ok: false, msg: 'Loại acc phải là 1, 3 hoặc 0 (vô hạn)' })
+      if (isNaN(duration) || duration < 1 || duration > 120) return json(res, 200, { ok: false, msg: 'Thời hạn phải từ 1 đến 120' })
+      if (isNaN(devices) || devices < 0 || devices > 100) return json(res, 200, { ok: false, msg: 'Số thiết bị phải từ 0 (vô hạn) đến 100' })
+
+      let base = Date.now()
+      if (!replace && key.expiresAt) {
+        const cur = new Date(key.expiresAt).getTime()
+        if (cur > Date.now()) base = cur // còn hạn → gia hạn thêm từ hạn cũ
+      }
+      const expiresAt = addDuration(unit, duration, base).toISOString()
+      const old = `${key.unit || 'day'} ${key.duration || 1} hạn ${fmtDT(new Date(key.expiresAt))}`
+      key.unit = unit
+      key.duration = duration
+      key.accLimit = Number(accs)
+      key.deviceLimit = Number(devices)
+      key.note = note
+      key.expiresAt = expiresAt
+      save()
+      addLog(session.username, 'admin', 'key_edit', `Sửa key ${code} (Trước: ${old} → Sau: ${unit} ${duration}, hạn ${fmtDT(new Date(expiresAt))}, acc=${accs}, devices=${devices})`, code)
+      return json(res, 200, { ok: true, key: keyView(key) })
+    }
+
     if (pathname === '/api/admin/logs') {
       const qs = (q.get('q') || '').toLowerCase()
       let logs = load().logs
@@ -389,6 +438,45 @@ async function route(req, res, q, pathname) {
       save()
       addLog(session.username, 'seller', 'key_revoke', `Thu hồi key ${code}`)
       return json(res, 200, { ok: true })
+    }
+
+    // ---- SỬA KEY (seller): đổi thời hạn / gia hạn / giới hạn acc / thiết bị / ghi chú ----
+    // Mặc định CỘNG DỒN từ hạn cũ (gia hạn thêm). replace=1 → tính lại từ bây giờ.
+    if (pathname === '/api/seller/edit') {
+      const code = normalize(q.get('code'))
+      const db = load()
+      const key = db.keys.find((k) => k.code === code)
+      if (!key) return json(res, 200, { ok: false, msg: 'Key không tồn tại' })
+      if (key.createdBy !== session.username) return json(res, 200, { ok: false, msg: 'Không phải key của bạn' })
+
+      const unit = (q.get('unit') || key.unit || 'day').toLowerCase()
+      const duration = parseInt(q.get('duration') !== null ? q.get('duration') : (key.duration || 1), 10)
+      const accs = q.get('accs') !== null ? q.get('accs') : String(key.accLimit)
+      const devices = q.get('devices') !== null ? q.get('devices') : String(key.deviceLimit)
+      const note = q.get('note') !== null ? q.get('note') : (key.note || '')
+      const replace = q.get('replace') === '1'
+
+      if (!['day', 'month'].includes(unit)) return json(res, 200, { ok: false, msg: 'Đơn vị phải là day hoặc month' })
+      if (![1, 3, 0].includes(Number(accs))) return json(res, 200, { ok: false, msg: 'Loại acc phải là 1, 3 hoặc 0 (vô hạn)' })
+      if (isNaN(duration) || duration < 1 || duration > 120) return json(res, 200, { ok: false, msg: 'Thời hạn phải từ 1 đến 120' })
+      if (isNaN(devices) || devices < 0 || devices > 100) return json(res, 200, { ok: false, msg: 'Số thiết bị phải từ 0 (vô hạn) đến 100' })
+
+      let base = Date.now()
+      if (!replace && key.expiresAt) {
+        const cur = new Date(key.expiresAt).getTime()
+        if (cur > Date.now()) base = cur // còn hạn → gia hạn thêm từ hạn cũ
+      }
+      const expiresAt = addDuration(unit, duration, base).toISOString()
+      const old = `${key.unit || 'day'} ${key.duration || 1} hạn ${fmtDT(new Date(key.expiresAt))}`
+      key.unit = unit
+      key.duration = duration
+      key.accLimit = Number(accs)
+      key.deviceLimit = Number(devices)
+      key.note = note
+      key.expiresAt = expiresAt
+      save()
+      addLog(session.username, 'seller', 'key_edit', `Sửa key ${code} (Trước: ${old} → Sau: ${unit} ${duration}, hạn ${fmtDT(new Date(expiresAt))}, acc=${accs}, devices=${devices})`, code)
+      return json(res, 200, { ok: true, key: keyView(key) })
     }
 
     if (pathname === '/api/seller/stats') {
