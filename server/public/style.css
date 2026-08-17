@@ -61,16 +61,17 @@ body {
 /* ===================== GLASS ===================== */
 .glass {
   position: relative;
-  background: linear-gradient(155deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.015) 55%, rgba(255, 255, 255, 0.045));
-  border: 1px solid var(--stroke);
+  background: linear-gradient(155deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.015) 55%, rgba(255, 255, 255, 0.05));
+  border: 1px solid rgba(255, 255, 255, 0.20);
   border-radius: var(--radius);
   backdrop-filter: blur(24px) saturate(160%);
   -webkit-backdrop-filter: blur(24px) saturate(160%);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.10),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
     inset 0 -1px 0 rgba(0, 0, 0, 0.3),
     0 16px 40px rgba(0, 0, 0, 0.55),
-    0 0 30px rgba(255, 255, 255, 0.03);
+    0 0 18px rgba(255, 255, 255, 0.14),
+    0 0 45px rgba(255, 255, 255, 0.07);
   transition: border-color .25s ease, box-shadow .25s ease, transform .25s ease;
 }
 .glass::before {
@@ -78,18 +79,19 @@ body {
   position: absolute;
   left: 8%; right: 8%; top: 0; height: 1px;
   border-radius: inherit;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
   pointer-events: none;
 }
 
-/* Glow tỏa sáng khi hover */
+/* Glow viền sáng mạnh khi hover */
 .glass:hover {
-  border-color: rgba(255, 255, 255, 0.22);
+  border-color: rgba(255, 255, 255, 0.45);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
     0 20px 55px rgba(0, 0, 0, 0.6),
-    0 0 55px rgba(255, 255, 255, 0.10),
-    0 0 90px rgba(255, 255, 255, 0.05);
+    0 0 26px rgba(255, 255, 255, 0.30),
+    0 0 70px rgba(255, 255, 255, 0.15),
+    0 0 130px rgba(255, 255, 255, 0.07);
 }
 
 /* Hiệu ứng tia sáng quét ngang qua thẻ */
@@ -102,7 +104,7 @@ body {
   position: absolute;
   top: 0; left: -60%;
   width: 45%; height: 100%;
-  background: linear-gradient(105deg, transparent, rgba(255, 255, 255, 0.10), transparent);
+  background: linear-gradient(105deg, transparent, rgba(255, 255, 255, 0.18), transparent);
   transform: skewX(-20deg);
   animation: shine 6.5s ease-in-out infinite;
   pointer-events: none;
@@ -159,15 +161,15 @@ select.inp {
   white-space: nowrap;
   -webkit-tap-highlight-color: transparent;
 }
-.btn:hover { background: rgba(255, 255, 255, 0.15); border-color: rgba(255,255,255,0.2); box-shadow: 0 0 20px rgba(255,255,255,0.06); }
+.btn:hover { background: rgba(255, 255, 255, 0.15); border-color: rgba(255,255,255,0.35); box-shadow: 0 0 24px rgba(255,255,255,0.16), 0 0 55px rgba(255,255,255,0.07); }
 .btn:active { transform: translateY(1px); }
 .btn.primary {
   background: linear-gradient(135deg, #ffffff, #d9d9dd);
   color: #000;
   border: none;
-  box-shadow: 0 0 22px rgba(255, 255, 255, 0.35);
+  box-shadow: 0 0 26px rgba(255, 255, 255, 0.55), 0 0 70px rgba(255, 255, 255, 0.18);
 }
-.btn.primary:hover { filter: brightness(1.1); box-shadow: 0 0 34px rgba(255, 255, 255, 0.5); }
+.btn.primary:hover { filter: brightness(1.1); box-shadow: 0 0 38px rgba(255, 255, 255, 0.75), 0 0 100px rgba(255, 255, 255, 0.25); }
 .btn.danger { background: rgba(255, 123, 133, 0.12); border-color: rgba(255, 123, 133, 0.4); color: var(--red); }
 .btn.danger:hover { background: rgba(255, 123, 133, 0.22); box-shadow: 0 0 22px rgba(255,123,133,0.15); }
 .btn.small { padding: 6px 12px; font-size: 12.5px; border-radius: 9px; }
@@ -185,6 +187,28 @@ select.inp {
   padding: 42px 36px;
   text-align: center;
   overflow: hidden;
+  border-color: rgba(255, 255, 255, 0.28);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 20px 50px rgba(0, 0, 0, 0.6),
+    0 0 30px rgba(255, 255, 255, 0.22),
+    0 0 90px rgba(255, 255, 255, 0.10);
+}
+.login-box::before {
+  content: '';
+  position: absolute;
+  left: 6%; right: 6%; top: 0; height: 1px;
+  border-radius: inherit;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.85), transparent);
+  pointer-events: none;
+}
+.login-box:hover {
+  border-color: rgba(255, 255, 255, 0.5);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    0 24px 60px rgba(0, 0, 0, 0.65),
+    0 0 40px rgba(255, 255, 255, 0.35),
+    0 0 120px rgba(255, 255, 255, 0.15);
 }
 .login-box .logo { font-size: 44px; margin-bottom: 8px; display: inline-block; text-shadow: 0 0 24px rgba(255,255,255,0.7); }
 .login-box h1 { font-size: 23px; font-weight: 700; letter-spacing: 1px; }
@@ -210,7 +234,7 @@ select.inp {
   display: grid; place-items: center;
   font-size: 20px; color: #000; font-weight: 700;
   background: linear-gradient(135deg, #ffffff, #dcdce0);
-  box-shadow: 0 0 26px rgba(255, 255, 255, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  box-shadow: 0 0 34px rgba(255, 255, 255, 0.75), 0 0 85px rgba(255, 255, 255, 0.30), inset 0 1px 0 rgba(255, 255, 255, 0.9);
   flex-shrink: 0;
 }
 .brand-txt { min-width: 0; }
@@ -235,23 +259,24 @@ select.inp {
 #nav button.active {
   color: var(--txt);
   background: rgba(255, 255, 255, 0.09);
-  border-color: rgba(255, 255, 255, 0.18);
-  box-shadow: 0 0 18px rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.32);
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.16), 0 0 44px rgba(255, 255, 255, 0.08);
 }
 #nav button .badge { margin-left: 6px; font-size: 11px; color: var(--cyan); }
 
 /* ===================== MAIN ===================== */
 #main { padding: 20px 18px 60px; max-width: 1240px; margin: 0 auto; position: relative; z-index: 1; }
 .card {
-  background: linear-gradient(155deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.015) 55%, rgba(255, 255, 255, 0.04));
-  border: 1px solid var(--stroke);
+  background: linear-gradient(155deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.015) 55%, rgba(255, 255, 255, 0.05));
+  border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: var(--radius);
   backdrop-filter: blur(24px) saturate(160%);
   -webkit-backdrop-filter: blur(24px) saturate(160%);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.10),
+    inset 0 1px 0 rgba(255, 255, 255, 0.13),
     0 16px 40px rgba(0, 0, 0, 0.55),
-    0 0 30px rgba(255, 255, 255, 0.03);
+    0 0 16px rgba(255, 255, 255, 0.12),
+    0 0 40px rgba(255, 255, 255, 0.06);
   padding: 20px;
   margin-bottom: 16px;
   position: relative;
@@ -262,15 +287,16 @@ select.inp {
   position: absolute;
   left: 8%; right: 8%; top: 0; height: 1px;
   border-radius: inherit;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
   pointer-events: none;
 }
 .card:hover {
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.4);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
     0 20px 55px rgba(0, 0, 0, 0.6),
-    0 0 50px rgba(255, 255, 255, 0.08);
+    0 0 24px rgba(255, 255, 255, 0.28),
+    0 0 60px rgba(255, 255, 255, 0.13);
 }
 .card h2 { font-size: 15px; margin-bottom: 14px; font-weight: 700; }
 .card h2 .hint { font-size: 12px; color: var(--txt-dim); font-weight: 400; }
@@ -284,17 +310,25 @@ textarea.inp { resize: vertical; min-height: 42px; }
 /* ===================== STATS ===================== */
 .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 18px; }
 .stat {
-  background: linear-gradient(155deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.015) 55%, rgba(255, 255, 255, 0.05));
-  border: 1px solid var(--stroke);
+  background: linear-gradient(155deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.015) 55%, rgba(255, 255, 255, 0.05));
+  border: 1px solid rgba(255, 255, 255, 0.17);
   border-radius: var(--radius);
   backdrop-filter: blur(24px) saturate(160%);
   -webkit-backdrop-filter: blur(24px) saturate(160%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.10), 0 14px 34px rgba(0,0,0,0.45), 0 0 26px rgba(255,255,255,0.03);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 14px 34px rgba(0,0,0,0.45), 0 0 16px rgba(255,255,255,0.10), 0 0 44px rgba(255,255,255,0.06);
   padding: 18px;
   position: relative;
   transition: .25s;
 }
-.stat:hover { border-color: rgba(255,255,255,0.2); box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 18px 46px rgba(0,0,0,0.5), 0 0 44px rgba(255,255,255,0.1); }
+.stat::before {
+  content: '';
+  position: absolute;
+  left: 12%; right: 12%; top: 0; height: 1px;
+  border-radius: inherit;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  pointer-events: none;
+}
+.stat:hover { border-color: rgba(255,255,255,0.42); box-shadow: inset 0 1px 0 rgba(255,255,255,0.14), 0 18px 46px rgba(0,0,0,0.5), 0 0 26px rgba(255,255,255,0.26), 0 0 70px rgba(255,255,255,0.14); }
 .stat .v { font-size: 28px; font-weight: 800; font-family: var(--font-num); color: var(--accent); text-shadow: 0 0 22px rgba(255, 255, 255, 0.4); }
 .stat .l { font-size: 12px; color: var(--txt-dim); margin-top: 4px; }
 
@@ -314,11 +348,11 @@ tr:hover td { background: rgba(255, 255, 255, 0.03); }
   word-break: break-all;
 }
 .tag { display: inline-block; padding: 3px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; }
-.tag.green { background: rgba(157, 255, 208, 0.13); color: var(--green); box-shadow: 0 0 12px rgba(157,255,208,0.12); }
-.tag.red { background: rgba(255, 123, 133, 0.13); color: var(--red); box-shadow: 0 0 12px rgba(255,123,133,0.12); }
-.tag.amber { background: rgba(255, 217, 160, 0.13); color: var(--amber); box-shadow: 0 0 12px rgba(255,217,160,0.12); }
+.tag.green { background: rgba(157, 255, 208, 0.14); color: var(--green); box-shadow: 0 0 16px rgba(157,255,208,0.22), 0 0 40px rgba(157,255,208,0.10); }
+.tag.red { background: rgba(255, 123, 133, 0.14); color: var(--red); box-shadow: 0 0 16px rgba(255,123,133,0.22), 0 0 40px rgba(255,123,133,0.10); }
+.tag.amber { background: rgba(255, 217, 160, 0.14); color: var(--amber); box-shadow: 0 0 16px rgba(255,217,160,0.22), 0 0 40px rgba(255,217,160,0.10); }
 .tag.gray { background: rgba(255, 255, 255, 0.07); color: var(--txt-dim); }
-.tag.cyan { background: rgba(139, 233, 255, 0.13); color: var(--cyan); box-shadow: 0 0 12px rgba(139,233,255,0.12); }
+.tag.cyan { background: rgba(139, 233, 255, 0.14); color: var(--cyan); box-shadow: 0 0 16px rgba(139,233,255,0.22), 0 0 40px rgba(139,233,255,0.10); }
 .mono { font-family: Consolas, monospace; }
 .nowrap { white-space: nowrap; }
 .gen-box { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
@@ -327,11 +361,13 @@ tr:hover td { background: rgba(255, 255, 255, 0.03); }
   gap: 8px;
   align-items: center;
   padding: 8px 10px;
-  border: 1px solid rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.14);
   border-radius: 10px;
   margin-bottom: 8px;
-  background: rgba(255,255,255,0.03);
+  background: rgba(255,255,255,0.05);
+  box-shadow: 0 0 14px rgba(255,255,255,0.08);
 }
+.key-row:hover { border-color: rgba(255,255,255,0.32); box-shadow: 0 0 20px rgba(255,255,255,0.16); }
 .key-row .code { flex: 1; }
 .act-group { display: flex; gap: 5px; flex-wrap: wrap; }
 .empty { color: var(--txt-dim); font-size: 13px; padding: 22px 0; text-align: center; }
@@ -344,12 +380,12 @@ tr:hover td { background: rgba(255, 255, 255, 0.03); }
 .detail { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-top: 12px; }
 .detail .d {
   background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.11);
   border-radius: 11px;
   padding: 11px 13px;
   transition: .2s;
 }
-.detail .d:hover { border-color: rgba(255,255,255,0.18); box-shadow: 0 0 18px rgba(255,255,255,0.06); }
+.detail .d:hover { border-color: rgba(255,255,255,0.3); box-shadow: 0 0 22px rgba(255,255,255,0.12), 0 0 55px rgba(255,255,255,0.05); }
 .detail .d .k { font-size: 11px; color: var(--accent-dim); font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; }
 .detail .d .val { font-size: 14px; margin-top: 3px; font-family: var(--font-num); }
 .hwids { margin-top: 14px; }
