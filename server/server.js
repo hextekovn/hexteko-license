@@ -8,6 +8,8 @@ const { generateCode, normalize, isValid, addDuration } = require('./keys')
 const PORT = Number(process.env.PORT) || 3000
 const PUBLIC_DIR = path.join(__dirname, 'public')
 const sessions = new Map() // token -> { role, username, createdAt }
+const TICKET_SECRET = process.env.TICKET_SECRET || crypto.randomBytes(32).toString('hex')
+const TICKET_TTL = parseInt(process.env.TICKET_TTL || '900', 10) // 15 phút
 
 // ==================== HELPERS ====================
 function json(res, code, obj) {
@@ -62,6 +64,27 @@ function fmtDT(d) {
   const p = (n) => String(n).padStart(2, '0')
   const x = new Date(d)
   return `${p(x.getDate())}/${p(x.getMonth() + 1)}/${x.getFullYear()} ${p(x.getHours())}:${p(x.getMinutes())}`
+}
+
+// ---- TICKET: token ngắn hạn cho app (chống fake/dump request) ----
+function makeTicket(code, hwid) {
+  const exp = Date.now() + TICKET_TTL * 1000
+  const payload = `${code}|${hwid}|${exp}`
+  const sig = crypto.createHmac('sha256', TICKET_SECRET).update(payload).digest('hex').slice(0, 32)
+  return Buffer.from(payload + '|' + sig).toString('base64url')
+}
+
+function parseTicket(t) {
+  try {
+    const s = Buffer.from(String(t || ''), 'base64url').toString()
+    const [code, hwid, exp, sig] = s.split('|')
+    const expect = crypto.createHmac('sha256', TICKET_SECRET).update(`${code}|${hwid}|${exp}`).digest('hex').slice(0, 32)
+    if (sig !== expect) return null
+    if (Number(exp) < Date.now()) return null
+    return { code, hwid }
+  } catch (e) {
+    return null
+  }
 }
 
 function keyView(k) {
@@ -123,7 +146,38 @@ async function route(req, res, q, pathname) {
       createdBy: key.createdBy,
       expiresAt: key.expiresAt,
       accLimit: key.accLimit,
-      deviceLimit: key.deviceLimit
+      deviceLimit: key.deviceLimit,
+      ticket: makeTicket(code, hwid)
+    })
+  }
+
+  // ---- APP: heartbeat xoay ticket (chống bỏ qua verify: app phải chứng minh còn sống) ----
+  if (pathname === '/api/heartbeat') {
+    const t = parseTicket(q.get('t'))
+    const hwid = (q.get('hwid') || '').trim()
+    const ip = (req.socket.remoteAddress || '').replace(/^::ffff:/, '')
+    if (!t) return json(res, 200, { ok: false, msg: 'Ticket không hợp lệ', ticketInvalid: true })
+    if (hwid !== t.hwid) return json(res, 200, { ok: false, msg: 'Thiết bị không khớp ticket', hwidInvalid: true })
+    const key = load().keys.find((k) => k.code === t.code)
+    if (!key) return json(res, 200, { ok: false, msg: 'Key không tồn tại' })
+    if (key.banned) return json(res, 200, { ok: false, msg: 'Key đã bị khóa', banned: true })
+    if (isExpired(key)) return json(res, 200, { ok: false, msg: 'Key đã hết hạn', expired: true })
+    // hwid phải khớp thiết bị đã đăng ký
+    const entry = (key.hwids || []).find((h) => h.hwid === t.hwid)
+    if (!entry) return json(res, 200, { ok: false, msg: 'Thiết bị chưa đăng ký', hwidInvalid: true })
+    // tránh ghi/flood mỗi lần ping: chỉ lưu khi có thay đổi thật (>3 phút)
+    const last = new Date(entry.lastSeen || 0).getTime()
+    if (Date.now() - last > 3 * 60 * 1000) {
+      entry.lastSeen = nowISO()
+      save()
+      addLog('app', 'app', 'heartbeat', `Heartbeat thiết bị ${t.hwid.slice(0, 12)}… (${ip})`, t.code)
+    }
+    return json(res, 200, {
+      ok: true,
+      expiresAt: key.expiresAt,
+      accLimit: key.accLimit,
+      deviceLimit: key.deviceLimit,
+      ticket: makeTicket(t.code, t.hwid)
     })
   }
 
