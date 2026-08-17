@@ -22,8 +22,8 @@ function isValid(code) {
   return /^HEXTEKO-[A-Z0-9]{10}$/.test(k)
 }
 
-function addDuration(unit, n) {
-  const d = new Date()
+function addDuration(unit, n, base) {
+  const d = base ? new Date(base) : new Date()
   if (String(unit).toLowerCase() === 'month') {
     d.setMonth(d.getMonth() + Math.max(1, n))
   } else {
