@@ -4,11 +4,18 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>HEXTEKO License Panel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <div class="aurora"></div>
+  <div class="aurora a2"></div>
+  <div class="aurora a3"></div>
+
   <div id="view-login" class="view">
-    <div class="login-box">
+    <div class="login-box glass">
       <div class="logo">◈</div>
       <h1>HEXTEKO <span>License</span></h1>
       <p>Admin &amp; Seller Panel</p>
@@ -20,8 +27,14 @@
   </div>
 
   <div id="view-app" class="view hidden">
-    <header class="topbar">
-      <div class="brand"><div class="logo">◈</div><div><h1>HEXTEKO <span>License</span></h1><p id="who"></p></div></div>
+    <header class="topbar glass">
+      <div class="brand">
+        <div class="logo">◈</div>
+        <div class="brand-txt">
+          <h1>HEXTEKO <span>License</span></h1>
+          <p id="who"></p>
+        </div>
+      </div>
       <nav id="nav"></nav>
       <button class="btn ghost" id="btn-logout">Đăng xuất</button>
     </header>
