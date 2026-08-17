@@ -21,9 +21,23 @@ function toast(msg, ok) {
   toastTimer = setTimeout(() => (el.className = 'toast'), 3000)
 }
 
-async function api(path) {
-  const r = await fetch('/api' + path)
-  return r.json()
+async function api(path, timeoutMs = 30000) {
+  const ctrl = new AbortController()
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs)
+  try {
+    const r = await fetch('/api' + path, { signal: ctrl.signal })
+    clearTimeout(timer)
+    const ct = r.headers.get('content-type') || ''
+    if (!ct.includes('application/json')) {
+      const txt = await r.text().catch(() => '')
+      return { ok: false, msg: 'Server trả kết quả không hợp lệ (HTTP ' + r.status + ')', raw: txt.slice(0, 200) }
+    }
+    return await r.json()
+  } catch (e) {
+    clearTimeout(timer)
+    const nm = e && e.name === 'AbortError'
+    return { ok: false, msg: nm ? 'Hết thời gian chờ server (Render free đang khởi động?). F5 thử lại.' : 'Không kết nối được server: ' + (e.message || 'lỗi mạng') }
+  }
 }
 
 function fmtMoney(n) {
@@ -38,17 +52,25 @@ function fmtDate(iso) {
 }
 
 // ==================== LOGIN ====================
+function setMsg(el, text, ok, loading) {
+  el.className = 'msg'
+  if (loading) { el.classList.add('loading'); el.textContent = text; return }
+  if (ok) el.classList.add('ok'); else el.classList.add('bad')
+  el.textContent = text
+}
+
 async function doLogin() {
   const u = $('#in-user').value.trim()
   const p = $('#in-pass').value
-  if (!u || !p) { $('#login-msg').textContent = 'Nhập username và password'; return }
-  $('#btn-login').disabled = true
-  $('#login-msg').textContent = 'Đang đăng nhập...'
+  const msgEl = $('#login-msg')
+  const btn = $('#btn-login')
+  if (!u || !p) { setMsg(msgEl, 'Nhập username và password', false); return }
+  btn.disabled = true
+  setMsg(msgEl, 'Đang đăng nhập...', true, true)
   const res = await api('/login?u=' + encodeURIComponent(u) + '&p=' + encodeURIComponent(p))
-  $('#btn-login').disabled = false
+  btn.disabled = false
   if (!res.ok) {
-    $('#login-msg').className = 'msg bad'
-    $('#login-msg').textContent = res.msg || 'Đăng nhập thất bại'
+    setMsg(msgEl, res.msg || 'Đăng nhập thất bại', false)
     return
   }
   localStorage.setItem(TOKEN_KEY, res.token)
@@ -298,11 +320,13 @@ function keyTableHtml(rows, mode) {
         <td>${mode === 'admin' ? `
           <div class="act-group">
             <button class="btn small" onclick="viewKeyDetail('${esc(r.code)}')">Chi tiết</button>
+            <button class="btn small" onclick="openEditKey('${esc(r.code)}', '${esc(r.unit || 'day')}', '${esc(r.duration)}', '${esc(r.accLimit)}', '${esc(r.deviceLimit)}', '${esc(r.note || '')}')">Sửa</button>
             <button class="btn small danger" onclick="toggleBan('${esc(r.code)}', ${r.banned ? 0 : 1})">${r.banned ? 'Mở khóa' : 'Khóa'}</button>
             <button class="btn small danger" onclick="delKey('${esc(r.code)}')">Xóa</button>
           </div>` : `
           <div class="act-group">
             <button class="btn small" onclick="viewKeyDetail('${esc(r.code)}')">Chi tiết</button>
+            <button class="btn small" onclick="openEditKey('${esc(r.code)}', '${esc(r.unit || 'day')}', '${esc(r.duration)}', '${esc(r.accLimit)}', '${esc(r.deviceLimit)}', '${esc(r.note || '')}')">Sửa / Gia hạn</button>
             ${r.banned ? '' : '<button class="btn small danger" onclick="revokeKey(\'' + esc(r.code) + '\')">Thu hồi</button>'}
           </div>`}
       </tr>`}).join('')}</tbody></table></div>`
@@ -375,6 +399,88 @@ async function viewKeyDetail(code) {
         ${(out.key.hwids || []).map((h) => `<div class="h"><span class="mono">${esc(h.hwid)}</span><span style="color:var(--dim)">lần đầu: ${fmtDate(h.firstSeen)}</span><span style="color:var(--dim)">cuối: ${fmtDate(h.lastSeen)}</span></div>`).join('') || '<div class="empty">Chưa có thiết bị nào kích hoạt</div>'}
       </div>` : `<div class="empty" style="color:var(--red)">${esc(out.msg || 'Key không tồn tại')}</div>`}
     </div>`
+}
+
+// ---- SỬA / GIA HẠN KEY ----
+function openEditKey(code, unit, duration, accs, devices, note) {
+  let ov = $('#edit-overlay')
+  if (!ov) {
+    ov = document.createElement('div')
+    ov.id = 'edit-overlay'
+    ov.className = 'edit-overlay'
+    ov.innerHTML = `
+      <div class="edit-modal glass">
+        <h3>Sửa key</h3>
+        <div class="edit-code" id="edit-code"></div>
+        <div class="row">
+          <div class="fld"><label>Loại thời hạn</label>
+            <select id="edit-unit" class="inp">
+              <option value="day">Ngày</option>
+              <option value="month">Tháng</option>
+            </select>
+          </div>
+          <div class="fld"><label>Số ngày / tháng</label><input id="edit-duration" class="inp" type="number" min="1" max="120"></div>
+          <div class="fld"><label>Số acc treo</label>
+            <select id="edit-accs" class="inp"><option value="1">1 acc</option><option value="3">3 acc</option><option value="0">Vô hạn acc</option></select>
+          </div>
+          <div class="fld"><label>Thiết bị (0 = vô hạn)</label><input id="edit-devices" class="inp" type="number" min="0" max="100"></div>
+        </div>
+        <div class="fld" style="margin-top:10px"><label>Ghi chú</label><input id="edit-note" class="inp" placeholder="vd: khách A - 09xx"></div>
+        <div class="row" style="margin-top:14px;align-items:center">
+          <label class="chk"><input type="checkbox" id="edit-replace"> Tính lại từ bây giờ (không cộng dồn)</label>
+        </div>
+        <div class="msg" id="edit-msg"></div>
+        <div class="row" style="margin-top:12px;justify-content:flex-end">
+          <button class="btn" onclick="closeEditKey()">Hủy</button>
+          <button class="btn primary" onclick="saveEditKey()">💾 Lưu</button>
+        </div>
+      </div>`
+    document.body.appendChild(ov)
+  }
+  ov.classList.add('show')
+  $('#edit-code').textContent = code
+  $('#edit-unit').value = unit
+  $('#edit-duration').value = duration
+  $('#edit-accs').value = String(accs)
+  $('#edit-devices').value = String(devices)
+  $('#edit-note').value = note
+  $('#edit-replace').checked = false
+  $('#edit-msg').textContent = ''
+  ov.dataset.code = code
+}
+
+function closeEditKey() {
+  const ov = $('#edit-overlay')
+  if (ov) ov.classList.remove('show')
+}
+
+async function saveEditKey() {
+  const ov = $('#edit-overlay')
+  if (!ov) return
+  const code = ov.dataset.code
+  const unit = $('#edit-unit').value
+  const duration = $('#edit-duration').value
+  const accs = $('#edit-accs').value
+  const devices = $('#edit-devices').value
+  const note = $('#edit-note').value.trim()
+  const replace = $('#edit-replace').checked ? '1' : '0'
+  const msg = $('#edit-msg')
+  msg.className = 'msg loading'
+  msg.textContent = 'Đang lưu…'
+  const path = SESSION.role === 'admin' ? '/admin/key/edit' : '/seller/edit'
+  const res = await api(path + '?token=' + SESSION.token +
+    '&code=' + encodeURIComponent(code) +
+    '&unit=' + unit + '&duration=' + encodeURIComponent(duration) +
+    '&accs=' + accs + '&devices=' + encodeURIComponent(devices) +
+    '&note=' + encodeURIComponent(note) + '&replace=' + replace)
+  if (!res.ok) {
+    msg.className = 'msg bad'
+    msg.textContent = res.msg || 'Lỗi'
+    return
+  }
+  toast('Đã sửa key ' + code, true)
+  closeEditKey()
+  if (SESSION.role === 'admin') loadKeys(); else viewMyKeys()
 }
 
 // ---- LOGS ----
